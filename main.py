@@ -1,10 +1,27 @@
-from collections import UserDict
 from datetime import datetime
+from collections import UserDict
 
 
 class Field:
     def __init__(self, value):
+        self._value = None
         self.value = value
+
+
+    @property
+    def value(self):
+        return self._value
+
+    @value.setter
+    def value(self, value):
+        if self._validate(value):
+            self._value = value
+        else:
+            raise ValueError(f"Invalid value for {self.__class__.__name__}.")
+
+
+    def _validate(self, value):
+        return True  # Базова функція валідації, яку можна перевизначити у підкласах
 
 
     def __str__(self):
@@ -17,14 +34,12 @@ class Name(Field):
 
 class Phone(Field):
     def __init__(self, value=""):
-        self.__value = None
-        self.value = value
+        super().__init__(value)
 
 
     @property
     def value(self):
         return self.__value
-
 
     @value.setter
     def value(self, value: str):
@@ -37,18 +52,22 @@ class Phone(Field):
             self.__value = ""
 
 
+    def validate(self, value):
+        if value:
+            return isinstance(value, str) and len(value) == 10 and value.isdigit()
+        return True
+
+
 class Birthday(Field):
     # Дата народження має бути у форматі DD.MM.YYYY:
      # 07.06.1984, 20.12.1990, ...
     def __init__(self, value=""):
-        self.__value = None
-        self.value = value
+        super().__init__(value)
 
 
     @property
     def value(self):
         return self.__value
-
 
     @value.setter
     def value(self, value: str):
@@ -60,14 +79,28 @@ class Birthday(Field):
         else:
             self.__value = ""
 
+
+    def __str__(self):
+        return self.value.strftime("%d.%m.%Y") if self.value else ""
+    
+
+    def validate(self, value):
+        if value:
+            try:
+                datetime.strptime(value, "%d.%m.%Y")
+                return True
+            except ValueError:
+                return False
+
+
     def __str__(self):
         return self.value.strftime("%d.%m.%Y") if self.value else ""
 
 
 class Record:
-    def __init__(self, name, phones=[], birthday=""):
+    def __init__(self, name, phones=None, birthday=""):
         self.name = Name(name)
-        self.phones = [Phone(phone) for phone in phones]
+        self.phones = [Phone(phone) for phone in (phones or [])]
         self.birthday = Birthday(birthday)
 
 
@@ -91,16 +124,11 @@ class Record:
 
 
     def find_phone(self, phone):
-        for item in self.phones:
-            if item.value == phone:
-                return item
-        
-        return None
+        return next((item for item in self.phones if item.value == phone), None)
 
 
     def set_birthday(self, birthday):
         self.birthday.value = birthday
-        
         return self
 
 
@@ -132,20 +160,14 @@ class AddressBook(UserDict):
     def add_record(self, record: Record):
         if self.data.get(record.name.value, "") == "":
             self.data[record.name.value] = record
-        
         return self
 
 
     def find(self, name: str):
-        if name in self.data:
-            return self.data[name]
-        
-        return None
-
+        return self.data.get(name, None)
 
     def delete(self, name: str):
-        self.data.pop(name, "")
-        
+        self.data.pop(name, None)
         return self
 
 
@@ -175,7 +197,7 @@ def main():
     jane_record.set_birthday("11.03.1970")
     book.add_record(jane_record)
 
-     # Знаходження та редагування телефону для John
+    # Знаходження та редагування телефону для John
     john = book.find("John")
     john.edit_phone("1234567890", "1112223333")
 
