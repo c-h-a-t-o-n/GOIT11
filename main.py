@@ -4,18 +4,18 @@ from collections import UserDict
 
 class Field:
     def __init__(self, value):
-        self._value = None
+        self.__value = None
         self.value = value
 
 
     @property
     def value(self):
-        return self._value
+        return self.__value
 
     @value.setter
     def value(self, value):
         if self._validate(value):
-            self._value = value
+            self.__value = value
         else:
             raise ValueError(f"Invalid value for {self.__class__.__name__}.")
 
@@ -59,8 +59,6 @@ class Phone(Field):
 
 
 class Birthday(Field):
-    # Дата народження має бути у форматі DD.MM.YYYY:
-     # 07.06.1984, 20.12.1990, ...
     def __init__(self, value=""):
         super().__init__(value)
 
@@ -82,7 +80,7 @@ class Birthday(Field):
 
     def __str__(self):
         return self.value.strftime("%d.%m.%Y") if self.value else ""
-    
+
 
     def validate(self, value):
         if value:
@@ -165,6 +163,7 @@ class AddressBook(UserDict):
 
     def find(self, name: str):
         return self.data.get(name, None)
+
 
     def delete(self, name: str):
         self.data.pop(name, None)
